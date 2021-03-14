@@ -3,6 +3,8 @@ from typing import List, Optional
 from os import getenv
 import time
 
+import uvicorn
+
 from fastapi import Depends, FastAPI, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
@@ -262,3 +264,7 @@ async def delete_character(delete_request: CharacterDelete):
 async def read_guilds(skip: int = 0, limit: int = 100):
     query = models.guild.select().offset(skip).limit(limit)
     return await database.fetch_all(query)
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
