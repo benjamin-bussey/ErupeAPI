@@ -16,6 +16,12 @@ class Character(BaseModel):
     last_login: int
 
 
+class CharacterDelete(BaseModel):
+    username: str
+    password: str
+    name: str
+
+
 class UserBase(BaseModel):
     username: str
 

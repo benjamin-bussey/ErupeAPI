@@ -3,15 +3,16 @@ from typing import List, Optional
 from os import getenv
 import time
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from starlette.status import HTTP_204_NO_CONTENT
 
-from schemas import UserBase, User, UserCreate, UserInDB, Character, Token, TokenData, Guild
+from schemas import UserBase, User, UserCreate, UserInDB, Character, Token, TokenData, Guild, CharacterDelete
 from security import SecurityConfig
 from database import database
 import models
@@ -233,12 +234,28 @@ async def read_characters(skip: int = 0, limit: int = 100):
 async def read_characters_by_name(name):
     query = models.character.select().where(models.character.c.name == name)
     db_character = await database.fetch_all(query)
-    print(db_character)
 
     if not db_character:
         raise HTTPException(status_code=404, detail="Character not found")
     else:
         return db_character
+
+
+@app.delete("/characters/", response_class=Response)
+async def delete_character(delete_request: CharacterDelete):
+    user = await authenticate_user(delete_request.username, delete_request.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    delete_query = models.character.delete()\
+        .where(models.character.c.name == delete_request.name).where(models.character.c.user_id == int(user.id))
+
+    await database.execute(delete_query)
+    return Response(status_code=HTTP_204_NO_CONTENT)
 
 
 @app.get("/guilds/", response_model=List[Guild])
